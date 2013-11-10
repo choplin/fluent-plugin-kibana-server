@@ -27,7 +27,7 @@ Fluent plugin to serve [Kibana](https://github.com/elasticsearch/kibana)
 |---|---|---|
 |bind|Local address for the server to bind to|0.0.0.0|
 |port|Port to listen on|24300|
-|mount|Root path of Kibana||
+|mount|Root path of Kibana|/|
 |access_log_path|Path to access log. No logs will be written if this parameter is ommited.||
 |elasticsearch_url|URL of elasticsearch. This parameter is used in config.js of Kibana.||
 
