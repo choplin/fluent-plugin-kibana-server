@@ -12,6 +12,7 @@ module Fluent
     config_param :mount, :string, :default => '/'
     config_param :access_log_path, :string, :default => nil
     config_param :elasticsearch_url, :string, :default => nil
+    config_param :remove_indices_before, :time, :default => nil
 
     def start
       $log.info "listening http server for kinaba on http://#{@bind}:#{@port}#{@mount}"
@@ -29,6 +30,8 @@ module Fluent
 
       @srv.mount(@mount, WEBrick::HTTPServlet::FileHandler, PATH_TO_KIBANA)
 
+      setup_deleter if @remove_indices_before
+
       @thread = Thread.new { @srv.start }
     end
 
@@ -42,6 +45,12 @@ module Fluent
         @access_log.close
       end
 
+      if @loop
+        @loop.watchers.each { |w| w.detach }
+        @loop.stop
+        @delete_thread.join
+      end
+
       if @thread
         @thread.join
         @thread = nil
@@ -49,6 +58,58 @@ module Fluent
     end
 
     private
+
+    def setup_deleter
+      @next_time = Time.now + 24 * 60 * 60
+      @loop = Coolio::Loop.new
+      # use 10 second interval for shutdown. If cool.io supports detach timer loop with signal, use 1 day interval.
+      @loop.attach(OutdatedIndicesDeleter.new(10, method(:delete_outdated_indices)))
+      @delete_thread = Thread.new {
+        begin
+          @loop.run
+        rescue => e
+          $log.error "unexpected error at deleter", :error_class => e.class, :error => e
+          $log.error_backtrace
+        end
+      }
+    end
+
+    def delete_outdated_indices
+      require 'elasticsearch'
+
+      return if skip_delete_process?
+
+      key = expired_key
+      client = Elasticsearch::Client.new(:hosts => @elasticsearch_url)
+      indices = client.indices.status['indices'].keys.select { |k| k.start_with?('logstash-') }
+      outdated = indices.select { |index| index <= key }
+      client.indices.delete(:index => outdated)
+      $log.debug "Deleted indices: #{outdated.join(', ')}"
+      @next_time += 24 * 60 * 60
+    rescue => e
+      $log.error "Failed to delete outdated indices. Try next time.", :error_class => e.class, :error => e
+      $log.error_backtrace
+    end
+
+    def expired_key
+      t = Time.now - (@remove_indices_before * 24 * 60 * 60)
+      "logstash-#{t.strftime("%Y.%m.%d")}"
+    end
+
+    def skip_delete_process?
+      Time.now < @next_time
+    end
+
+    class OutdatedIndicesDeleter < Coolio::TimerWatcher
+      def initialize(interval, callback)
+        super(interval, true)
+        @callback = callback
+      end
+
+      def on_timer
+        @callback.call
+      end
+    end
 
     def kibana_config
       elasticsearch = if @elasticsearch_url

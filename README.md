@@ -30,6 +30,7 @@ Fluent plugin to serve [Kibana](https://github.com/elasticsearch/kibana)
 |mount|Root path of Kibana|/|
 |access_log_path|Path to access log. No logs will be written if this parameter is ommited.||
 |elasticsearch_url|URL of elasticsearch. This parameter is used in config.js of Kibana.||
+|remove_indices_before|Unit is day. Remove outdated indices from elasticsearch.|nil(no deletion)|
 
 ## TODO
 
