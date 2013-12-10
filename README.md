@@ -11,12 +11,12 @@ Fluent plugin to serve [Kibana](https://github.com/elasticsearch/kibana)
 ### Example
 
 ```
-<source **>
+<source>
   type kibana_server
   bind 0.0.0.0
   port 24300
   mount /kibana/
-  access_log_path /Users/okuno/tmp/var/log/kibana/access.log
+  access_log_path /var/log/kibana/access.log
   elasticsearch_url http://localhost:9200
 </source>
 ```
@@ -32,6 +32,8 @@ Fluent plugin to serve [Kibana](https://github.com/elasticsearch/kibana)
 |elasticsearch_url|URL of elasticsearch. This parameter is used in config.js of Kibana.||
 
 ## TODO
+
+* Removing indexes periodically
 
 patches welcome!
 
