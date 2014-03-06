@@ -1,4 +1,4 @@
-# Fluent::Plugin::KibanaServer
+# Fluent::Plugin::KibanaServer, a plugin for [Fluentd](http://fluentd.org)
 
 Fluent plugin to serve [Kibana](https://github.com/elasticsearch/kibana)
 
